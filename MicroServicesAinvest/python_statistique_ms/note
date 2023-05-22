@@ -1,0 +1,16 @@
+@app.route('/process_data', methods=['POST'])
+def process_data():
+    method_frame, header_frame, body = request.json#channel.basic_get(queue='data_queue')
+    if body:
+        data = json.loads(body)
+        print(data)
+        dataset = pd.DataFrame(data)
+        test = sns.countplot(x="Nombre pieces principales", data=dataset[dataset['Type local'] == 'Appartement'])
+        x_data = [float(tick.get_text()) for tick in test.get_xticklabels()]
+        y_data = [patch.get_height() for patch in test.patches]
+        data_result = {'axe_x': x_data, 'axe_y': y_data}
+        channel.basic_publish(exchange='', routing_key=result_topic, body=json.dumps(data_result))
+        channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+        return "Data processed successfully."
+    else:
+        return "No data provided."
